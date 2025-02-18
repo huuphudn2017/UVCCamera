@@ -12,23 +12,12 @@ pluginManagement {
     }
 }
 dependencyResolutionManagement {
-    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
-
     repositories {
         google()
+        mavenLocal()
         mavenCentral()
     }
 }
 
-rootProject.name = "UVCCamera"
-include(":lib")
-include(":usbCameraCommon")
-include(":usbCameraTest")
-include(":usbCameraTest0")
-include(":usbCameraTest2")
-include(":usbCameraTest3")
-include(":usbCameraTest4")
-include(":usbCameraTest5")
-include(":usbCameraTest6")
-include(":usbCameraTest7")
-include(":usbCameraTest8")
+rootProject.name = "UVCCamera-Flutter"
+include(":android")
