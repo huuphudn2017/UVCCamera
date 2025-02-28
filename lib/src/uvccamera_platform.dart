@@ -249,6 +249,7 @@ class UvcCameraPlatform extends UvcCameraPlatformInterface {
     await _nativeMethodChannel.invokeMethod<String>('initializeAgora', {
       'appId': appId,
       'token': token,
+      'channel': channel,
     });
     return;
   }

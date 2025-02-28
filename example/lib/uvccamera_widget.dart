@@ -321,7 +321,7 @@ class _UvcCameraWidgetState extends State<UvcCameraWidget> with WidgetsBindingOb
                       onPressed: () {
                         if (!isStreaming) {
                           isStreaming = true;
-                          _cameraController?.initializeAgora(widget.appId, "");//pass actual token here
+                          _cameraController?.initializeAgora(widget.appId, "","");//pass actual token and channel here
                         } else {
                           isStreaming = false;
                           _cameraController?.stopStream();

@@ -1212,7 +1212,7 @@ import io.flutter.view.TextureRegistry;
         return null;
     }
 
-    public void initializeAgora(String appId, String token) {
+    public void initializeAgora(String appId, String token, String channel) {
 
         final var applicationContext = this.applicationContext.get();
         if (applicationContext == null) {
@@ -1251,14 +1251,10 @@ import io.flutter.view.TextureRegistry;
 
 
             });
-//            agoraEngine.enableVideo();
-//            agoraEngine.setClientRole(Constants.CLIENT_ROLE_BROADCASTER);
-//            agoraEngine.enableAudio();
-//            agoraEngine.setEnableSpeakerphone(true);
             agoraEngine.setExternalVideoSource(true, false, Constants.ExternalVideoSourceType.VIDEO_FRAME);
                         agoraEngine.enableVideo();
 
-            joinChannel(token, "main-channel");
+            joinChannel(token, channel);
             canPushFrame = true;
         } catch (Exception e) {
             Log.e("MyAppAgora", "Agora initialization failed: " + e.getMessage());

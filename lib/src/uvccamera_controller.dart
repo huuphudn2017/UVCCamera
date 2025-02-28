@@ -173,10 +173,10 @@ class UvcCameraController extends ValueNotifier<UvcCameraControllerState> {
   }
 
   /// Init agora
-  Future<void> initializeAgora(String appId,String token) async {
+  Future<void> initializeAgora(String appId, String token, String channel) async {
     _ensureInitializedNotDisposed();
     await UvcCameraPlatformInterface.instance.initializeAgora(
-      appId,token
+      appId, token, channel
     );
     return;
   }
