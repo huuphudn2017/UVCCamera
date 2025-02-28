@@ -172,6 +172,22 @@ class UvcCameraController extends ValueNotifier<UvcCameraControllerState> {
     return pictureFile;
   }
 
+  /// Init agora
+  Future<void> initializeAgora(String appId,String token) async {
+    _ensureInitializedNotDisposed();
+    await UvcCameraPlatformInterface.instance.initializeAgora(
+      appId,token
+    );
+    return;
+  }
+
+  Future<void> stopStream() async {
+    _ensureInitializedNotDisposed();
+    await UvcCameraPlatformInterface.instance.stopStream();
+    return;
+  }
+
+
   /// Starts video recording.
   Future<void> startVideoRecording(UvcCameraMode videoRecordingMode) async {
     _ensureInitializedNotDisposed();

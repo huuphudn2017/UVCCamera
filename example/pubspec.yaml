@@ -1,5 +1,5 @@
 name: uvccamera_example
-description: "Demonstrates how to use the uvccamera plugin."
+description: "USB camera"
 publish_to: none
 
 environment:

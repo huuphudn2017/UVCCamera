@@ -14,6 +14,7 @@ import android.util.Pair;
 
 import androidx.annotation.NonNull;
 
+import com.serenegiant.usb.IFrameCallback;
 import com.serenegiant.usb.Size;
 import com.serenegiant.usb.USBMonitor;
 import com.serenegiant.usb.UVCCamera;
@@ -29,6 +30,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import io.agora.meta.IMetaServiceEventHandler;
+import io.agora.rtc2.ChannelMediaOptions;
+import io.agora.rtc2.Constants;
+import io.agora.rtc2.IRtcEngineEventHandler;
+import io.agora.rtc2.RtcEngine;
+import io.agora.rtc2.RtcEngineConfig;
+import io.agora.rtc2.video.AgoraVideoFrame;
 import io.flutter.plugin.common.BinaryMessenger;
 import io.flutter.plugin.common.EventChannel;
 import io.flutter.view.TextureRegistry;
@@ -113,6 +121,10 @@ import io.flutter.view.TextureRegistry;
      */
     private final Map<Integer, UvcCameraResources> camerasResources = new ConcurrentHashMap<>();
 
+    private RtcEngine agoraEngine;
+    boolean canPushFrame = false;
+
+
     /**
      * Constructs a new {@link UvcCameraPlatform} instance
      *
@@ -141,6 +153,7 @@ import io.flutter.view.TextureRegistry;
     /* package-private */ void release() {
         usbMonitor.unregister();
         usbMonitor.destroy();
+        cleanupAgoraEngine();
 
         applicationContext.clear();
         binaryMessenger.clear();
@@ -477,6 +490,23 @@ import io.flutter.view.TextureRegistry;
         try {
             camera.setPreviewDisplay(cameraSurface);
             camera.startPreview();
+            camera.setFrameCallback(new IFrameCallback() {
+                @Override
+                public void onFrame(ByteBuffer frame) {
+                    if (agoraEngine != null && canPushFrame) {
+//                        Log.e("MyAppAgora","here");
+//                        pushFrameToAgora(frame.array(), camera.getPreviewSize().width, camera.getPreviewSize().height);
+                        byte[] data = new byte[frame.remaining()];
+                        frame.get(data);
+
+                        byte[] i420Data = convertYUV420SPToI420(data, camera.getPreviewSize().width, camera.getPreviewSize().height);
+
+
+                        pushFrameToAgora(i420Data, camera.getPreviewSize().width, camera.getPreviewSize().height);
+
+                    }
+                }
+            }, UVCCamera.PIXEL_FORMAT_NV21);
         } catch (final Exception e) {
             camera.close();
             camera.destroy();
@@ -1023,7 +1053,7 @@ import io.flutter.view.TextureRegistry;
             try {
                 saveTakenPictureToFile(cameraId, outputFile, frameData);
                 resultHandler.onResult(outputFile, null);
-            } catch(final Exception e) {
+            } catch (final Exception e) {
                 Log.e(TAG, "Failed to save taken picture to file", e);
                 resultHandler.onResult(null, e);
             }
@@ -1180,6 +1210,123 @@ import io.flutter.view.TextureRegistry;
         }
 
         return null;
+    }
+
+    public void initializeAgora(String appId, String token) {
+
+        final var applicationContext = this.applicationContext.get();
+        if (applicationContext == null) {
+            throw new IllegalStateException("applicationContext reference has expired");
+        }
+
+        try {
+
+            agoraEngine = RtcEngine.create(applicationContext, appId, new IRtcEngineEventHandler() {
+
+                @Override
+                public void onConnectionStateChanged(int state, int reason) {
+                    super.onConnectionStateChanged(state, reason);
+//                    Constants.CONNECTION_STATE_CONNECTED;
+                    Log.e("MyAppAgora", "Agora onConnectionStateChanged: " + state + " r:" + reason);
+
+                }
+
+                @Override
+                public void onUserJoined(int uid, int elapsed) {
+                    super.onUserJoined(uid, elapsed);
+                    Log.e("MyAppAgora", "Agora onUserJoined: " + uid);
+                }
+
+                @Override
+                public void onJoinChannelSuccess(String channel, int uid, int elapsed) {
+                    super.onJoinChannelSuccess(channel, uid, elapsed);
+                    Log.e("MyAppAgora", "Agora onJoinChannelSuccess: " + channel);
+                }
+
+                @Override
+                public void onError(int err) {
+                    Log.e("MyAppAgora", "Agora err: " + err);
+                    super.onError(err);
+                }
+
+
+            });
+//            agoraEngine.enableVideo();
+//            agoraEngine.setClientRole(Constants.CLIENT_ROLE_BROADCASTER);
+//            agoraEngine.enableAudio();
+//            agoraEngine.setEnableSpeakerphone(true);
+            agoraEngine.setExternalVideoSource(true, false, Constants.ExternalVideoSourceType.VIDEO_FRAME);
+                        agoraEngine.enableVideo();
+
+            joinChannel(token, "main-channel");
+            canPushFrame = true;
+        } catch (Exception e) {
+            Log.e("MyAppAgora", "Agora initialization failed: " + e.getMessage());
+        }
+    }
+
+    private void joinChannel(String token, String channelName) {
+        // Create an instance of ChannelMediaOptions and configure it
+        ChannelMediaOptions options = new ChannelMediaOptions();
+        // Set the user role to BROADCASTER or AUDIENCE according to the use-case
+        options.clientRoleType = Constants.CLIENT_ROLE_BROADCASTER;
+        // In the live broadcast use-case, set the channelProfile to BROADCASTING (live broadcast use-case)
+        options.channelProfile = Constants.CHANNEL_PROFILE_LIVE_BROADCASTING;
+        // Set the latency level for audience
+        options.audienceLatencyLevel = Constants.AUDIENCE_LATENCY_LEVEL_ULTRA_LOW_LATENCY;
+        // Publish local media
+        options.publishCameraTrack = true;
+        options.publishMicrophoneTrack = true;
+        agoraEngine.joinChannel("", channelName, 0, options);
+
+    }
+
+
+    private byte[] convertYUV420SPToI420(byte[] yuv420sp, int width, int height) {
+        int frameSize = width * height;
+        byte[] i420 = new byte[frameSize * 3 / 2];
+
+        // Copy Y plane
+        System.arraycopy(yuv420sp, 0, i420, 0, frameSize);
+
+        // Convert UV plane (YUV420SP stores UV, I420 needs U & V separate)
+        int uvIndex = frameSize;
+        for (int i = frameSize; i < yuv420sp.length; i += 2) {
+            i420[uvIndex++] = yuv420sp[i];     // U
+        }
+        for (int i = frameSize + 1; i < yuv420sp.length; i += 2) {
+            i420[uvIndex++] = yuv420sp[i];     // V
+        }
+        return i420;
+    }
+
+    private void pushFrameToAgora(byte[] frameData, int width, int height) {
+        AgoraVideoFrame frame = new AgoraVideoFrame();
+        frame.format = AgoraVideoFrame.FORMAT_I420;
+//        frame.format = AgoraVideoFrame.FORMAT_NV21;
+//        frame.format = AgoraVideoFrame.FORMAT_I420; // Instead of NV21
+
+        frame.stride = width;
+        frame.height = height;
+        frame.buf = frameData;
+        frame.rotation = 0;
+        frame.timeStamp = System.currentTimeMillis();
+
+        synchronized (this) {
+            agoraEngine.pushExternalVideoFrameById(frame, 0);
+        }
+    }
+
+    private void enableVideo() {
+        agoraEngine.enableVideo();
+    }
+
+    void cleanupAgoraEngine() {
+        canPushFrame = false;
+        if (agoraEngine != null) {
+            agoraEngine.leaveChannel();
+            agoraEngine = null;
+        }
     }
 
 }

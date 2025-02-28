@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:uvccamera/uvccamera.dart';
 
@@ -16,6 +17,7 @@ class _UvcCameraDevicesScreenState extends State<UvcCameraDevicesScreen> {
   bool _isSupported = false;
   StreamSubscription<UvcCameraDeviceEvent>? _deviceEventSubscription;
   final Map<String, UvcCameraDevice> _devices = {};
+  final TextEditingController appIdController = TextEditingController();
 
   @override
   void initState() {
@@ -72,22 +74,84 @@ class _UvcCameraDevicesScreenState extends State<UvcCameraDevicesScreen> {
       );
     }
 
-    return ListView(
-      children: _devices.values.map((device) {
-        return ListTile(
-          leading: const Icon(Icons.videocam),
-          title: Text(device.name),
-          subtitle: Text('Vendor ID: ${device.vendorId}, Product ID: ${device.productId}'),
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => UvcCameraDeviceScreen(device: device),
-              ),
-            );
-          },
+    return Column(
+      children: [
+        Expanded(
+          child: ListView(
+            children: _devices.values.map((device) {
+              return ListTile(
+                leading: const Icon(Icons.videocam),
+                title: Text(device.name),
+                subtitle: Text('Vendor ID: ${device.vendorId}, Product ID: ${device.productId}'),
+                onTap: () {
+                  onDeviceSelected(device);
+                },
+              );
+            }).toList(),
+          ),
+        ),
+        Container(
+          padding: EdgeInsets.all(16),
+          child: TextField(
+            controller: appIdController,
+            decoration: InputDecoration(
+              border: OutlineInputBorder(),
+              hintText: 'Enter agora appID',
+            ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.all(80),
+          child: ElevatedButton(
+              onPressed: _devices.values.isEmpty
+                  ? null
+                  : () {
+                      onDeviceSelected(_devices.values.toList()[0]);
+                    },
+              child: Text("Submit")),
+        )
+      ],
+    );
+  }
+
+  Future<void> _showMyDialog() async {
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: false, // user must tap button!
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Missing App ID'),
+          content: const SingleChildScrollView(
+            child: ListBody(
+              children: <Widget>[
+                Text('Please enter Agora app Id'),
+              ],
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Okay'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
         );
-      }).toList(),
+      },
+    );
+  }
+
+  void onDeviceSelected(UvcCameraDevice device) {
+    if (appIdController.text.isEmpty) {
+      _showMyDialog();
+      return;
+    }
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => UvcCameraDeviceScreen(device: device, appId: appIdController.text),
+      ),
     );
   }
 }

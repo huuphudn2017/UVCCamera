@@ -440,13 +440,13 @@ import io.flutter.plugin.common.MethodChannel;
                     return;
                 }
 
-                final var frameWidth = (Integer)videoRecordingMode.get("frameWidth");
+                final var frameWidth = (Integer) videoRecordingMode.get("frameWidth");
                 if (frameWidth == null) {
                     result.error("InvalidArgument", "videoRecordingMode.frameWidth is required", null);
                     return;
                 }
 
-                final var frameHeight = (Integer)videoRecordingMode.get("frameHeight");
+                final var frameHeight = (Integer) videoRecordingMode.get("frameHeight");
                 if (frameHeight == null) {
                     result.error("InvalidArgument", "videoRecordingMode.frameHeight is required", null);
                     return;
@@ -480,6 +480,17 @@ import io.flutter.plugin.common.MethodChannel;
                     return;
                 }
 
+                result.success(null);
+            }
+
+            case "initializeAgora" -> {
+                String appId = call.argument("appId");
+                String token = call.argument("token");
+                uvcCameraPlatform.initializeAgora(appId, token);
+                result.success(null);
+            }
+            case "stopStream" -> {
+                uvcCameraPlatform.cleanupAgoraEngine();
                 result.success(null);
             }
             default -> result.notImplemented();

@@ -7,8 +7,9 @@ import 'package:uvccamera/uvccamera.dart';
 
 class UvcCameraWidget extends StatefulWidget {
   final UvcCameraDevice device;
+  final String appId;
 
-  const UvcCameraWidget({super.key, required this.device});
+  const UvcCameraWidget({super.key, required this.appId, required this.device});
 
   @override
   State<UvcCameraWidget> createState() => _UvcCameraWidgetState();
@@ -27,6 +28,8 @@ class _UvcCameraWidgetState extends State<UvcCameraWidget> with WidgetsBindingOb
   StreamSubscription<UvcCameraButtonEvent>? _buttonEventSubscription;
   StreamSubscription<UvcCameraDeviceEvent>? _deviceEventSubscription;
   String _log = '';
+
+  bool isStreaming = false;
 
   @override
   void initState() {
@@ -309,43 +312,29 @@ class _UvcCameraWidgetState extends State<UvcCameraWidget> with WidgetsBindingOb
                   ),
                 ),
               ),
-              Align(
-                alignment: Alignment.bottomCenter,
-                child: Padding(
-                  padding: const EdgeInsets.only(bottom: 50.0),
-                  child: ValueListenableBuilder<UvcCameraControllerState>(
-                    valueListenable: _cameraController!,
-                    builder: (context, value, child) {
-                      return Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          FloatingActionButton(
-                            backgroundColor: Colors.white,
-                            onPressed: () async => {
-                              await _takePicture(),
-                            },
-                            child: Icon(Icons.camera_alt, color: Colors.black),
-                          ),
-                          FloatingActionButton(
-                            backgroundColor: value.isRecordingVideo ? Colors.red : Colors.white,
-                            onPressed: () async {
-                              if (value.isRecordingVideo) {
-                                await _stopVideoRecording();
-                              } else {
-                                await _startVideoRecording(value.previewMode!);
-                              }
-                            },
-                            child: Icon(
-                              value.isRecordingVideo ? Icons.stop : Icons.videocam,
-                              color: value.isRecordingVideo ? Colors.white : Colors.black,
-                            ),
-                          ),
-                        ],
-                      );
-                    },
-                  ),
+
+              Padding(
+                padding: const EdgeInsets.only(bottom: 80),
+                child: Align(
+                  alignment: Alignment.bottomCenter,
+                  child: ElevatedButton(
+                      onPressed: () {
+                        if (!isStreaming) {
+                          isStreaming = true;
+                          _cameraController?.initializeAgora(widget.appId, "");//pass actual token here
+                        } else {
+                          isStreaming = false;
+                          _cameraController?.stopStream();
+                        }
+                        Future.delayed(Duration(seconds: 1)).then(
+                          (value) {
+                            if (mounted) setState(() {});
+                          },
+                        );
+                      },
+                      child: Text(isStreaming ? "Stop Stream" : "Start stream on Agora")),
                 ),
-              ),
+              )
             ],
           );
         } else {

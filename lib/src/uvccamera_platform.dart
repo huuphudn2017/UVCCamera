@@ -245,6 +245,21 @@ class UvcCameraPlatform extends UvcCameraPlatformInterface {
   }
 
   @override
+  Future<void> initializeAgora(String appId, String token) async {
+    await _nativeMethodChannel.invokeMethod<String>('initializeAgora', {
+      'appId': appId,
+      'token': token,
+    });
+    return;
+  }
+  
+  @override
+  Future<void> stopStream() async {
+    await _nativeMethodChannel.invokeMethod<String>('stopStream');
+    return;
+  }
+
+  @override
   Future<XFile> startVideoRecording(int cameraId, UvcCameraMode videoRecordingMode) async {
     final result = await _nativeMethodChannel.invokeMethod<String>('startVideoRecording', {
       'cameraId': cameraId,
