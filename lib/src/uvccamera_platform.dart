@@ -245,7 +245,7 @@ class UvcCameraPlatform extends UvcCameraPlatformInterface {
   }
 
   @override
-  Future<void> initializeAgora(String appId, String token) async {
+  Future<void> initializeAgora(String appId, String token, String channel) async {
     await _nativeMethodChannel.invokeMethod<String>('initializeAgora', {
       'appId': appId,
       'token': token,
@@ -253,7 +253,7 @@ class UvcCameraPlatform extends UvcCameraPlatformInterface {
     });
     return;
   }
-  
+
   @override
   Future<void> stopStream() async {
     await _nativeMethodChannel.invokeMethod<String>('stopStream');
