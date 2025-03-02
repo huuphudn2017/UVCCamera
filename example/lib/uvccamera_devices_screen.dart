@@ -22,6 +22,10 @@ class _UvcCameraDevicesScreenState extends State<UvcCameraDevicesScreen> {
   @override
   void initState() {
     super.initState();
+    if (kDebugMode) {
+      appIdController.text = "1495a5c75a024f05afe291aa0b5ee5f8";
+    }
+
 
     UvcCamera.isSupported().then((value) {
       setState(() {

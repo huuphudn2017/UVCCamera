@@ -91,7 +91,7 @@ abstract class UvcCameraPlatformInterface extends PlatformInterface {
     throw UnimplementedError('initializeAgora() has not been implemented.');
   }
 
-  Future<void> initializeAgora(String appId, String token, String channel) {
+  Future<void> initializeAgora(String appId, String token, String channel, int uid) {
     throw UnimplementedError('initializeAgora() has not been implemented.');
   }
 

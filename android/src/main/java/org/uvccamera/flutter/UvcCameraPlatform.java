@@ -11,6 +11,8 @@ import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
 import android.util.Pair;
+import android.view.SurfaceView;
+import android.widget.FrameLayout;
 
 import androidx.annotation.NonNull;
 
@@ -37,6 +39,7 @@ import io.agora.rtc2.IRtcEngineEventHandler;
 import io.agora.rtc2.RtcEngine;
 import io.agora.rtc2.RtcEngineConfig;
 import io.agora.rtc2.video.AgoraVideoFrame;
+import io.agora.rtc2.video.VideoCanvas;
 import io.flutter.plugin.common.BinaryMessenger;
 import io.flutter.plugin.common.EventChannel;
 import io.flutter.view.TextureRegistry;
@@ -1212,7 +1215,7 @@ import io.flutter.view.TextureRegistry;
         return null;
     }
 
-    public void initializeAgora(String appId, String token, String channel) {
+    public void initializeAgora(String appId, String token, String channel, int uid) {
 
         final var applicationContext = this.applicationContext.get();
         if (applicationContext == null) {
@@ -1254,14 +1257,14 @@ import io.flutter.view.TextureRegistry;
             agoraEngine.setExternalVideoSource(true, false, Constants.ExternalVideoSourceType.VIDEO_FRAME);
                         agoraEngine.enableVideo();
 
-            joinChannel(token, channel);
+            joinChannel(token, channel, uid);
             canPushFrame = true;
         } catch (Exception e) {
             Log.e("MyAppAgora", "Agora initialization failed: " + e.getMessage());
         }
     }
 
-    private void joinChannel(String token, String channelName) {
+    private void joinChannel(String token, String channelName, int uid) {
         // Create an instance of ChannelMediaOptions and configure it
         ChannelMediaOptions options = new ChannelMediaOptions();
         // Set the user role to BROADCASTER or AUDIENCE according to the use-case
@@ -1273,9 +1276,16 @@ import io.flutter.view.TextureRegistry;
         // Publish local media
         options.publishCameraTrack = true;
         options.publishMicrophoneTrack = true;
-        agoraEngine.joinChannel("", channelName, 0, options);
-
+        agoraEngine.joinChannel("", channelName, uid, options);
     }
+
+   /* private void setupRemoteVideo(int uid) {
+        FrameLayout container = findViewById(R.id.remote_video_view_container);
+        SurfaceView surfaceView = new SurfaceView(getBaseContext());
+        surfaceView.setZOrderMediaOverlay(true);
+        container.addView(surfaceView);
+        agoraEngine.setupRemoteVideo(new VideoCanvas(surfaceView, VideoCanvas.RENDER_MODE_FIT, uid));
+    }*/
 
 
     private byte[] convertYUV420SPToI420(byte[] yuv420sp, int width, int height) {

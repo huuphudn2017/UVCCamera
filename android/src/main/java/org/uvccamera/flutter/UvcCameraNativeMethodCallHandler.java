@@ -487,7 +487,8 @@ import io.flutter.plugin.common.MethodChannel;
                 String appId = call.argument("appId");
                 String token = call.argument("token");
                 String channel = call.argument("channel");
-                uvcCameraPlatform.initializeAgora(appId, token, channel);
+                int uid = call.argument("uid");
+                uvcCameraPlatform.initializeAgora(appId, token, channel, uid);
                 result.success(null);
             }
             case "stopStream" -> {
