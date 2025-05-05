@@ -32,10 +32,12 @@ abstract class UvcCameraPlatformInterface extends PlatformInterface {
   }
 
   Future<bool> requestDevicePermission(UvcCameraDevice device) {
-    throw UnimplementedError('requestDevicePermission() has not been implemented.');
+    throw UnimplementedError(
+        'requestDevicePermission() has not been implemented.');
   }
 
-  Future<int> openCamera(UvcCameraDevice device, UvcCameraResolutionPreset resolutionPreset) {
+  Future<int> openCamera(
+      UvcCameraDevice device, UvcCameraResolutionPreset resolutionPreset) {
     throw UnimplementedError('openCamera() has not been implemented.');
   }
 
@@ -47,28 +49,37 @@ abstract class UvcCameraPlatformInterface extends PlatformInterface {
     throw UnimplementedError('getCameraTextureId() has not been implemented.');
   }
 
-  Future<Stream<UvcCameraErrorEvent>> attachToCameraErrorCallback(int cameraId) {
-    throw UnimplementedError('attachToCameraErrorCallback() has not been implemented.');
+  Future<Stream<UvcCameraErrorEvent>> attachToCameraErrorCallback(
+      int cameraId) {
+    throw UnimplementedError(
+        'attachToCameraErrorCallback() has not been implemented.');
   }
 
   Future<void> detachFromCameraErrorCallback(int cameraId) {
-    throw UnimplementedError('detachFromCameraErrorCallback() has not been implemented.');
+    throw UnimplementedError(
+        'detachFromCameraErrorCallback() has not been implemented.');
   }
 
-  Future<Stream<UvcCameraStatusEvent>> attachToCameraStatusCallback(int cameraId) {
-    throw UnimplementedError('attachToCameraStatusCallback() has not been implemented.');
+  Future<Stream<UvcCameraStatusEvent>> attachToCameraStatusCallback(
+      int cameraId) {
+    throw UnimplementedError(
+        'attachToCameraStatusCallback() has not been implemented.');
   }
 
   Future<void> detachFromCameraStatusCallback(int cameraId) {
-    throw UnimplementedError('detachFromCameraStatusCallback() has not been implemented.');
+    throw UnimplementedError(
+        'detachFromCameraStatusCallback() has not been implemented.');
   }
 
-  Future<Stream<UvcCameraButtonEvent>> attachToCameraButtonCallback(int cameraId) {
-    throw UnimplementedError('attachToCameraButtonCallback() has not been implemented.');
+  Future<Stream<UvcCameraButtonEvent>> attachToCameraButtonCallback(
+      int cameraId) {
+    throw UnimplementedError(
+        'attachToCameraButtonCallback() has not been implemented.');
   }
 
   Future<void> detachFromCameraButtonCallback(int cameraId) {
-    throw UnimplementedError('detachFromCameraButtonCallback() has not been implemented.');
+    throw UnimplementedError(
+        'detachFromCameraButtonCallback() has not been implemented.');
   }
 
   Future<List<UvcCameraMode>> getSupportedModes(int cameraId) {
@@ -86,16 +97,9 @@ abstract class UvcCameraPlatformInterface extends PlatformInterface {
   Future<XFile> takePicture(int cameraId) {
     throw UnimplementedError('takePicture() has not been implemented.');
   }
-  
-  Future<void> stopStream() {
-    throw UnimplementedError('initializeAgora() has not been implemented.');
-  }
 
-  Future<void> initializeAgora(String appId, String token, String channel, int uid) {
-    throw UnimplementedError('initializeAgora() has not been implemented.');
-  }
-
-  Future<XFile> startVideoRecording(int cameraId, UvcCameraMode videoRecordingMode) {
+  Future<XFile> startVideoRecording(
+      int cameraId, UvcCameraMode videoRecordingMode) {
     throw UnimplementedError('startVideoRecording() has not been implemented.');
   }
 
@@ -104,6 +108,10 @@ abstract class UvcCameraPlatformInterface extends PlatformInterface {
   }
 
   Stream<UvcCameraDeviceEvent> get deviceEventStream {
+    throw UnimplementedError('deviceEventStream has not been implemented.');
+  }
+
+  Stream<dynamic> get cameraEventStream {
     throw UnimplementedError('deviceEventStream has not been implemented.');
   }
 }

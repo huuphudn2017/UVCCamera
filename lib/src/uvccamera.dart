@@ -16,11 +16,17 @@ class UvcCamera {
 
   /// Requests permission to access the UVC camera device.
   static Future<bool> requestDevicePermission(UvcCameraDevice uvcCameraDevice) {
-    return UvcCameraPlatformInterface.instance.requestDevicePermission(uvcCameraDevice);
+    return UvcCameraPlatformInterface.instance
+        .requestDevicePermission(uvcCameraDevice);
   }
 
   /// Device event stream.
   static Stream<UvcCameraDeviceEvent> get deviceEventStream {
     return UvcCameraPlatformInterface.instance.deviceEventStream;
+  }
+
+  /// Camera event stream.
+  static Stream<dynamic> get cameraEventStream {
+    return UvcCameraPlatformInterface.instance.cameraEventStream;
   }
 }

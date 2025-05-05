@@ -15,7 +15,8 @@ class UvcCameraWidget extends StatefulWidget {
   State<UvcCameraWidget> createState() => _UvcCameraWidgetState();
 }
 
-class _UvcCameraWidgetState extends State<UvcCameraWidget> with WidgetsBindingObserver {
+class _UvcCameraWidgetState extends State<UvcCameraWidget>
+    with WidgetsBindingObserver {
   bool _isAttached = false;
   bool _hasDevicePermission = false;
   bool _hasCameraPermission = false;
@@ -27,6 +28,7 @@ class _UvcCameraWidgetState extends State<UvcCameraWidget> with WidgetsBindingOb
   StreamSubscription<UvcCameraStatusEvent>? _statusEventSubscription;
   StreamSubscription<UvcCameraButtonEvent>? _buttonEventSubscription;
   StreamSubscription<UvcCameraDeviceEvent>? _deviceEventSubscription;
+  StreamSubscription<dynamic>? _cameraEventSubscription;
   String _log = '';
 
   bool isStreaming = false;
@@ -75,12 +77,17 @@ class _UvcCameraWidgetState extends State<UvcCameraWidget> with WidgetsBindingOb
       _requestPermissions();
     });
 
+    _cameraEventSubscription = UvcCamera.cameraEventStream.listen((event) {
+      debugPrint('camera event: $event');
+    });
+
     _deviceEventSubscription = UvcCamera.deviceEventStream.listen((event) {
       if (event.device.name != widget.device.name) {
         return;
       }
 
-      if (event.type == UvcCameraDeviceEventType.attached && !_isDeviceAttached) {
+      if (event.type == UvcCameraDeviceEventType.attached &&
+          !_isDeviceAttached) {
         // NOTE: Requesting UVC device permission will trigger connection request
         _requestPermissions();
       }
@@ -107,8 +114,10 @@ class _UvcCameraWidgetState extends State<UvcCameraWidget> with WidgetsBindingOb
           _cameraController = UvcCameraController(
             device: widget.device,
           );
-          _cameraControllerInitializeFuture = _cameraController!.initialize().then((_) async {
-            _errorEventSubscription = _cameraController!.cameraErrorEvents.listen((event) {
+          _cameraControllerInitializeFuture =
+              _cameraController!.initialize().then((_) async {
+            _errorEventSubscription =
+                _cameraController!.cameraErrorEvents.listen((event) {
               setState(() {
                 _log = 'error: ${event.error}\n$_log';
               });
@@ -119,13 +128,15 @@ class _UvcCameraWidgetState extends State<UvcCameraWidget> with WidgetsBindingOb
               }
             });
 
-            _statusEventSubscription = _cameraController!.cameraStatusEvents.listen((event) {
+            _statusEventSubscription =
+                _cameraController!.cameraStatusEvents.listen((event) {
               setState(() {
                 _log = 'status: ${event.payload}\n$_log';
               });
             });
 
-            _buttonEventSubscription = _cameraController!.cameraButtonEvents.listen((event) {
+            _buttonEventSubscription =
+                _cameraController!.cameraButtonEvents.listen((event) {
               setState(() {
                 _log = 'btn(${event.button}): ${event.state}\n$_log';
               });
@@ -181,6 +192,9 @@ class _UvcCameraWidgetState extends State<UvcCameraWidget> with WidgetsBindingOb
     _deviceEventSubscription?.cancel();
     _deviceEventSubscription = null;
 
+    _cameraEventSubscription?.cancel();
+    _cameraEventSubscription = null;
+
     _isAttached = false;
   }
 
@@ -208,7 +222,8 @@ class _UvcCameraWidgetState extends State<UvcCameraWidget> with WidgetsBindingOb
   }
 
   Future<bool> _requestDevicePermission() async {
-    final devicePermissionStatus = await UvcCamera.requestDevicePermission(widget.device);
+    final devicePermissionStatus =
+        await UvcCamera.requestDevicePermission(widget.device);
     return devicePermissionStatus;
   }
 
@@ -216,7 +231,8 @@ class _UvcCameraWidgetState extends State<UvcCameraWidget> with WidgetsBindingOb
     var cameraPermissionStatus = await Permission.camera.status;
     if (cameraPermissionStatus.isGranted) {
       return true;
-    } else if (cameraPermissionStatus.isDenied || cameraPermissionStatus.isRestricted) {
+    } else if (cameraPermissionStatus.isDenied ||
+        cameraPermissionStatus.isRestricted) {
       cameraPermissionStatus = await Permission.camera.request();
       return cameraPermissionStatus.isGranted;
     } else {
@@ -312,29 +328,6 @@ class _UvcCameraWidgetState extends State<UvcCameraWidget> with WidgetsBindingOb
                   ),
                 ),
               ),
-              Padding(
-                padding: const EdgeInsets.only(bottom: 80),
-                child: Align(
-                  alignment: Alignment.bottomCenter,
-                  child: ElevatedButton(
-                      onPressed: () {
-                        if (!isStreaming) {
-                          isStreaming = true;
-                          _cameraController?.initializeAgora(
-                              widget.appId, "", "", 0); //pass actual token, channel and uid here
-                        } else {
-                          isStreaming = false;
-                          _cameraController?.stopStream();
-                        }
-                        Future.delayed(Duration(seconds: 1)).then(
-                          (value) {
-                            if (mounted) setState(() {});
-                          },
-                        );
-                      },
-                      child: Text(isStreaming ? "Stop Stream" : "Start stream on Agora")),
-                ),
-              )
             ],
           );
         } else {

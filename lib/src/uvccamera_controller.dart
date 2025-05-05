@@ -69,12 +69,17 @@ class UvcCameraController extends ValueNotifier<UvcCameraControllerState> {
         resolutionPreset,
       );
 
-      _textureId = await UvcCameraPlatformInterface.instance.getCameraTextureId(_cameraId!);
-      final previewMode = await UvcCameraPlatformInterface.instance.getPreviewMode(_cameraId!);
+      _textureId = await UvcCameraPlatformInterface.instance
+          .getCameraTextureId(_cameraId!);
+      final previewMode =
+          await UvcCameraPlatformInterface.instance.getPreviewMode(_cameraId!);
 
-      _cameraErrorEventStream = await UvcCameraPlatformInterface.instance.attachToCameraErrorCallback(_cameraId!);
-      _cameraStatusEventStream = await UvcCameraPlatformInterface.instance.attachToCameraStatusCallback(_cameraId!);
-      _cameraButtonEventStream = await UvcCameraPlatformInterface.instance.attachToCameraButtonCallback(_cameraId!);
+      _cameraErrorEventStream = await UvcCameraPlatformInterface.instance
+          .attachToCameraErrorCallback(_cameraId!);
+      _cameraStatusEventStream = await UvcCameraPlatformInterface.instance
+          .attachToCameraStatusCallback(_cameraId!);
+      _cameraButtonEventStream = await UvcCameraPlatformInterface.instance
+          .attachToCameraButtonCallback(_cameraId!);
 
       value = value.copyWith(
         isInitialized: true,
@@ -104,21 +109,24 @@ class UvcCameraController extends ValueNotifier<UvcCameraControllerState> {
 
     if (_cameraButtonEventStream != null) {
       if (_cameraId != null) {
-        await UvcCameraPlatformInterface.instance.detachFromCameraButtonCallback(_cameraId!);
+        await UvcCameraPlatformInterface.instance
+            .detachFromCameraButtonCallback(_cameraId!);
       }
       _cameraButtonEventStream = null;
     }
 
     if (_cameraStatusEventStream != null) {
       if (_cameraId != null) {
-        await UvcCameraPlatformInterface.instance.detachFromCameraStatusCallback(_cameraId!);
+        await UvcCameraPlatformInterface.instance
+            .detachFromCameraStatusCallback(_cameraId!);
       }
       _cameraStatusEventStream = null;
     }
 
     if (_cameraErrorEventStream != null) {
       if (_cameraId != null) {
-        await UvcCameraPlatformInterface.instance.detachFromCameraErrorCallback(_cameraId!);
+        await UvcCameraPlatformInterface.instance
+            .detachFromCameraErrorCallback(_cameraId!);
       }
       _cameraErrorEventStream = null;
     }
@@ -165,38 +173,25 @@ class UvcCameraController extends ValueNotifier<UvcCameraControllerState> {
   Future<XFile> takePicture() async {
     _ensureInitializedNotDisposed();
 
-    final XFile pictureFile = await UvcCameraPlatformInterface.instance.takePicture(
+    final XFile pictureFile =
+        await UvcCameraPlatformInterface.instance.takePicture(
       _cameraId!,
     );
 
     return pictureFile;
   }
 
-  /// Init agora
-  Future<void> initializeAgora(String appId, String token, String channel, int uid) async {
-    _ensureInitializedNotDisposed();
-    await UvcCameraPlatformInterface.instance.initializeAgora(
-      appId, token, channel, uid
-    );
-    return;
-  }
-
-  Future<void> stopStream() async {
-    _ensureInitializedNotDisposed();
-    await UvcCameraPlatformInterface.instance.stopStream();
-    return;
-  }
-
-
   /// Starts video recording.
   Future<void> startVideoRecording(UvcCameraMode videoRecordingMode) async {
     _ensureInitializedNotDisposed();
 
     if (value.isRecordingVideo) {
-      throw UvcCameraControllerIllegalStateException('UvcCameraController is already recording video');
+      throw UvcCameraControllerIllegalStateException(
+          'UvcCameraController is already recording video');
     }
 
-    final XFile videoRecordingFile = await UvcCameraPlatformInterface.instance.startVideoRecording(
+    final XFile videoRecordingFile =
+        await UvcCameraPlatformInterface.instance.startVideoRecording(
       _cameraId!,
       videoRecordingMode,
     );
@@ -213,7 +208,8 @@ class UvcCameraController extends ValueNotifier<UvcCameraControllerState> {
     _ensureInitializedNotDisposed();
 
     if (!value.isRecordingVideo) {
-      throw UvcCameraControllerIllegalStateException('UvcCameraController is not recording video');
+      throw UvcCameraControllerIllegalStateException(
+          'UvcCameraController is not recording video');
     }
 
     await UvcCameraPlatformInterface.instance.stopVideoRecording(_cameraId!);

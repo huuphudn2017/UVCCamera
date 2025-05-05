@@ -483,18 +483,6 @@ import io.flutter.plugin.common.MethodChannel;
                 result.success(null);
             }
 
-            case "initializeAgora" -> {
-                String appId = call.argument("appId");
-                String token = call.argument("token");
-                String channel = call.argument("channel");
-                int uid = call.argument("uid");
-                uvcCameraPlatform.initializeAgora(appId, token, channel, uid);
-                result.success(null);
-            }
-            case "stopStream" -> {
-                uvcCameraPlatform.cleanupAgoraEngine();
-                result.success(null);
-            }
             default -> result.notImplemented();
         }
     }

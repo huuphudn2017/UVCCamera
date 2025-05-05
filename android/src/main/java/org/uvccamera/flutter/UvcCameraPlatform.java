@@ -27,19 +27,13 @@ import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import io.agora.meta.IMetaServiceEventHandler;
-import io.agora.rtc2.ChannelMediaOptions;
-import io.agora.rtc2.Constants;
-import io.agora.rtc2.IRtcEngineEventHandler;
-import io.agora.rtc2.RtcEngine;
-import io.agora.rtc2.RtcEngineConfig;
-import io.agora.rtc2.video.AgoraVideoFrame;
-import io.agora.rtc2.video.VideoCanvas;
 import io.flutter.plugin.common.BinaryMessenger;
 import io.flutter.plugin.common.EventChannel;
 import io.flutter.view.TextureRegistry;
@@ -55,23 +49,23 @@ import io.flutter.view.TextureRegistry;
     private static final String TAG = UvcCameraPlatform.class.getSimpleName();
 
     /**
-     * libuvc's {@code uvc_status_class} to {@code UvcCameraStatusClass} enum mapping.
+     * libuvc's {@code uvc_status_class} to {@code UvcCameraStatusClass} enum
+     * mapping.
      */
     public static final Map<Integer, String> STATUS_CLASS_LIBUVC_VALUE_TO_ENUM_NAME = Map.of(
             /* UVC_STATUS_CLASS_CONTROL */ 0x10, "control",
             /* UVC_STATUS_CLASS_CONTROL_CAMERA */ 0x11, "controlCamera",
-            /* UVC_STATUS_CLASS_CONTROL_PROCESSING */ 0x12, "controlProcessing"
-    );
+            /* UVC_STATUS_CLASS_CONTROL_PROCESSING */ 0x12, "controlProcessing");
 
     /**
-     * libuvc's {@code uvc_status_attribute} to {@code UvcCameraStatusAttribute} enum mapping.
+     * libuvc's {@code uvc_status_attribute} to {@code UvcCameraStatusAttribute}
+     * enum mapping.
      */
     public static final Map<Integer, String> STATUS_ATTRIBUTE_LIBUVC_VALUE_TO_ENUM_NAME = Map.of(
             /* UVC_STATUS_ATTRIBUTE_VALUE_CHANGE */ 0x00, "valueChange",
             /* UVC_STATUS_ATTRIBUTE_INFO_CHANGE */ 0x01, "infoChange",
             /* UVC_STATUS_ATTRIBUTE_FAILURE_CHANGE */ 0x02, "errorChange",
-            /* UVC_STATUS_ATTRIBUTE_UNKNOWN */ 0xff, "unknown"
-    );
+            /* UVC_STATUS_ATTRIBUTE_UNKNOWN */ 0xff, "unknown");
 
     /**
      * Main looper handler
@@ -99,6 +93,11 @@ import io.flutter.view.TextureRegistry;
     private final UvcCameraDeviceEventStreamHandler deviceEventStreamHandler;
 
     /**
+     * "uvccamera/camera_events" event stream handler
+     */
+    private final UvcCameraDeviceEventStreamHandler cameraEventStreamHandler;
+
+    /**
      * USB monitor
      */
     private final USBMonitor usbMonitor;
@@ -124,10 +123,6 @@ import io.flutter.view.TextureRegistry;
      */
     private final Map<Integer, UvcCameraResources> camerasResources = new ConcurrentHashMap<>();
 
-    private RtcEngine agoraEngine;
-    boolean canPushFrame = false;
-
-
     /**
      * Constructs a new {@link UvcCameraPlatform} instance
      *
@@ -139,12 +134,13 @@ import io.flutter.view.TextureRegistry;
             final @NonNull Context applicationContext,
             final @NonNull BinaryMessenger binaryMessenger,
             final @NonNull TextureRegistry textureRegistry,
-            final @NonNull UvcCameraDeviceEventStreamHandler deviceEventStreamHandler
-    ) {
+            final @NonNull UvcCameraDeviceEventStreamHandler deviceEventStreamHandler,
+            final @NonNull UvcCameraDeviceEventStreamHandler cameraEventStreamHandler) {
         this.applicationContext = new WeakReference<>(applicationContext);
         this.binaryMessenger = new WeakReference<>(binaryMessenger);
         this.textureRegistry = textureRegistry;
         this.deviceEventStreamHandler = deviceEventStreamHandler;
+        this.cameraEventStreamHandler = cameraEventStreamHandler;
 
         usbMonitor = new USBMonitor(applicationContext, new UvcCameraDeviceMonitorListener(this));
         usbMonitor.register();
@@ -156,7 +152,6 @@ import io.flutter.view.TextureRegistry;
     /* package-private */ void release() {
         usbMonitor.unregister();
         usbMonitor.destroy();
-        cleanupAgoraEngine();
 
         applicationContext.clear();
         binaryMessenger.clear();
@@ -182,14 +177,11 @@ import io.flutter.view.TextureRegistry;
                         "deviceClass", device.getDeviceClass(),
                         "deviceSubclass", device.getDeviceSubclass(),
                         "vendorId", device.getVendorId(),
-                        "productId", device.getProductId()
-                ),
-                "type", "attached"
-        );
+                        "productId", device.getProductId()),
+                "type", "attached");
 
         mainLooperHandler.post(
-                () -> eventSink.success(event)
-        );
+                () -> eventSink.success(event));
     }
 
     /**
@@ -212,14 +204,11 @@ import io.flutter.view.TextureRegistry;
                         "deviceClass", device.getDeviceClass(),
                         "deviceSubclass", device.getDeviceSubclass(),
                         "vendorId", device.getVendorId(),
-                        "productId", device.getProductId()
-                ),
-                "type", "detached"
-        );
+                        "productId", device.getProductId()),
+                "type", "detached");
 
         mainLooperHandler.post(
-                () -> eventSink.success(event)
-        );
+                () -> eventSink.success(event));
     }
 
     /**
@@ -242,14 +231,11 @@ import io.flutter.view.TextureRegistry;
                         "deviceClass", device.getDeviceClass(),
                         "deviceSubclass", device.getDeviceSubclass(),
                         "vendorId", device.getVendorId(),
-                        "productId", device.getProductId()
-                ),
-                "type", "connected"
-        );
+                        "productId", device.getProductId()),
+                "type", "connected");
 
         mainLooperHandler.post(
-                () -> eventSink.success(event)
-        );
+                () -> eventSink.success(event));
     }
 
     /**
@@ -272,15 +258,41 @@ import io.flutter.view.TextureRegistry;
                         "deviceClass", device.getDeviceClass(),
                         "deviceSubclass", device.getDeviceSubclass(),
                         "vendorId", device.getVendorId(),
-                        "productId", device.getProductId()
-                ),
-                "type", "disconnected"
-        );
+                        "productId", device.getProductId()),
+                "type", "disconnected");
 
         mainLooperHandler.post(
-                () -> eventSink.success(event)
-        );
+                () -> eventSink.success(event));
     }
+
+    /**
+     * camera stream event
+     *
+     * @param frame the camera USB device
+     */
+    /* package-private */ void cameraStreamEvent(final ByteBuffer frame, int width, int height) {
+        final var eventSink = cameraEventStreamHandler.getEventSink();
+        if (eventSink == null) {
+            Log.w(TAG, "cameraStreamEvent: event sink not found");
+            return;
+        }
+
+        // Create a copy of the frame data
+        byte[] frameData = new byte[frame.remaining()];
+        frame.get(frameData);
+
+        // Create event with metadata
+        final Map<String, Object> eventData = new HashMap<>();
+        eventData.put("frame", frameData);
+        eventData.put("width", width);
+        eventData.put("height", height);
+        eventData.put("timestamp", System.currentTimeMillis());
+        eventData.put("format", "NV21");
+
+        mainLooperHandler.post(() -> {
+            eventSink.success(eventData);
+        });
+    }    
 
     /**
      * Checks if the device supports UVC camera
@@ -309,12 +321,12 @@ import io.flutter.view.TextureRegistry;
      * Requests permission to access the specified UVC camera device
      *
      * @param deviceName    the name of the UVC camera device
-     * @param resultHandler the handler to be notified when the device permission request result is available
+     * @param resultHandler the handler to be notified when the device permission
+     *                      request result is available
      */
     public void requestDevicePermission(
             final @NonNull String deviceName,
-            final @NonNull UvcCameraDevicePermissionRequestResultHandler resultHandler
-    ) {
+            final @NonNull UvcCameraDevicePermissionRequestResultHandler resultHandler) {
         Log.v(TAG, "requestDevicePermission: deviceName=" + deviceName + ", resultHandler=" + resultHandler);
 
         final var device = findDeviceByName(deviceName);
@@ -401,7 +413,8 @@ import io.flutter.view.TextureRegistry;
             throw new IllegalStateException("binaryMessenger reference has expired");
         }
 
-        // NOTE: The device is already connected, this should just retrieve the device control block
+        // NOTE: The device is already connected, this should just retrieve the device
+        // control block
         final var deviceCtrlBlock = usbMonitor.openDevice(device);
 
         final var camera = new UVCCamera();
@@ -469,8 +482,7 @@ import io.flutter.view.TextureRegistry;
                 camera.setPreviewSize(
                         desiredFrameSize.width,
                         desiredFrameSize.height,
-                        desiredFrameFormat
-                );
+                        desiredFrameFormat);
                 frameFormat = desiredFrameFormat;
                 break;
             } catch (final IllegalArgumentException e) {
@@ -496,18 +508,7 @@ import io.flutter.view.TextureRegistry;
             camera.setFrameCallback(new IFrameCallback() {
                 @Override
                 public void onFrame(ByteBuffer frame) {
-                    if (agoraEngine != null && canPushFrame) {
-//                        Log.e("MyAppAgora","here");
-//                        pushFrameToAgora(frame.array(), camera.getPreviewSize().width, camera.getPreviewSize().height);
-                        byte[] data = new byte[frame.remaining()];
-                        frame.get(data);
-
-                        byte[] i420Data = convertYUV420SPToI420(data, camera.getPreviewSize().width, camera.getPreviewSize().height);
-
-
-                        pushFrameToAgora(i420Data, camera.getPreviewSize().width, camera.getPreviewSize().height);
-
-                    }
+                    cameraStreamEvent(frame, camera.getPreviewSize().width, camera.getPreviewSize().height);
                 }
             }, UVCCamera.PIXEL_FORMAT_NV21);
         } catch (final Exception e) {
@@ -520,24 +521,21 @@ import io.flutter.view.TextureRegistry;
         // Create the error event channel
         final var errorEventChannel = new EventChannel(
                 binaryMessenger,
-                "uvccamera/camera@" + cameraId + "/error_events"
-        );
+                "uvccamera/camera@" + cameraId + "/error_events");
         final var errorEventStreamHandler = new UvcCameraErrorEventStreamHandler();
         errorEventChannel.setStreamHandler(errorEventStreamHandler);
 
         // Create the status event channel
         final var statusEventChannel = new EventChannel(
                 binaryMessenger,
-                "uvccamera/camera@" + cameraId + "/status_events"
-        );
+                "uvccamera/camera@" + cameraId + "/status_events");
         final var statusEventStreamHandler = new UvcCameraStatusEventStreamHandler();
         statusEventChannel.setStreamHandler(statusEventStreamHandler);
 
         // Create the button event channel
         final var buttonEventChannel = new EventChannel(
                 binaryMessenger,
-                "uvccamera/camera@" + cameraId + "/button_events"
-        );
+                "uvccamera/camera@" + cameraId + "/button_events");
         final var buttonEventStreamHandler = new UvcCameraButtonEventStreamHandler();
         buttonEventChannel.setStreamHandler(buttonEventStreamHandler);
 
@@ -557,8 +555,7 @@ import io.flutter.view.TextureRegistry;
                 buttonEventChannel,
                 buttonEventStreamHandler,
                 buttonCallback,
-                mediaRecorder
-        ));
+                mediaRecorder));
 
         return cameraId;
     }
@@ -663,8 +660,7 @@ import io.flutter.view.TextureRegistry;
      */
     public long getCameraTextureId(final int cameraId) {
         Log.v(TAG, "getCameraTextureId"
-                + ": cameraId=" + cameraId
-        );
+                + ": cameraId=" + cameraId);
 
         final var cameraResources = camerasResources.get(cameraId);
         if (cameraResources == null) {
@@ -685,8 +681,7 @@ import io.flutter.view.TextureRegistry;
         Log.v(TAG, "castCameraErrorEvent"
                 + ": cameraId=" + cameraId
                 + ", type=" + type
-                + ", reason=" + reason
-        );
+                + ", reason=" + reason);
 
         final var cameraResources = camerasResources.get(cameraId);
         if (cameraResources == null) {
@@ -703,13 +698,10 @@ import io.flutter.view.TextureRegistry;
                 "cameraId", cameraId,
                 "error", Map.of(
                         "type", type,
-                        "reason", reason
-                )
-        );
+                        "reason", reason));
 
         mainLooperHandler.post(
-                () -> eventSink.success(eventMap)
-        );
+                () -> eventSink.success(eventMap));
     }
 
     /**
@@ -760,16 +752,14 @@ import io.flutter.view.TextureRegistry;
             int event,
             int selector,
             int statusAttribute,
-            ByteBuffer data
-    ) {
+            ByteBuffer data) {
         Log.v(TAG, "castCameraStatusEvent"
                 + ": cameraId=" + cameraId
                 + ", statusClass=" + statusClass
                 + ", event=" + event
                 + ", selector=" + selector
                 + ", statusAttribute=" + statusAttribute
-                + ", data=" + data
-        );
+                + ", data=" + data);
 
         final var cameraResources = camerasResources.get(cameraId);
         if (cameraResources == null) {
@@ -800,13 +790,10 @@ import io.flutter.view.TextureRegistry;
                         "statusClass", statusClassEnumName,
                         "event", event,
                         "selector", selector,
-                        "statusAttribute", statusAttributeEnumName
-                )
-        );
+                        "statusAttribute", statusAttributeEnumName));
 
         mainLooperHandler.post(
-                () -> eventSink.success(eventMap)
-        );
+                () -> eventSink.success(eventMap));
     }
 
     /**
@@ -852,8 +839,7 @@ import io.flutter.view.TextureRegistry;
         Log.v(TAG, "castCameraButtonEvent"
                 + ": cameraId=" + cameraId
                 + ", button=" + button
-                + ", state=" + state
-        );
+                + ", state=" + state);
 
         final var cameraResources = camerasResources.get(cameraId);
         if (cameraResources == null) {
@@ -869,12 +855,10 @@ import io.flutter.view.TextureRegistry;
         final var eventMap = Map.of(
                 "cameraId", cameraId,
                 "button", button,
-                "state", state
-        );
+                "state", state);
 
         mainLooperHandler.post(
-                () -> eventSink.success(eventMap)
-        );
+                () -> eventSink.success(eventMap));
     }
 
     /**
@@ -955,14 +939,12 @@ import io.flutter.view.TextureRegistry;
             final int cameraId,
             final int frameWidth,
             final int frameHeight,
-            final int frameFormat
-    ) {
+            final int frameFormat) {
         Log.v(TAG, "setPreviewSize"
                 + ": cameraId=" + cameraId
                 + ", frameWidth=" + frameWidth
                 + ", frameHeight=" + frameHeight
-                + ", frameFormat=" + frameFormat
-        );
+                + ", frameFormat=" + frameFormat);
 
         final var cameraResources = camerasResources.get(cameraId);
         if (cameraResources == null) {
@@ -972,8 +954,7 @@ import io.flutter.view.TextureRegistry;
         cameraResources.camera().setPreviewSize(
                 frameWidth,
                 frameHeight,
-                frameFormat == 4 ? UVCCamera.FRAME_FORMAT_YUYV : UVCCamera.FRAME_FORMAT_MJPEG
-        );
+                frameFormat == 4 ? UVCCamera.FRAME_FORMAT_YUYV : UVCCamera.FRAME_FORMAT_MJPEG);
     }
 
     /**
@@ -984,8 +965,7 @@ import io.flutter.view.TextureRegistry;
      */
     public void takePicture(final int cameraId, UvcCameraTakePictureResultHandler resultHandler) {
         Log.v(TAG, "takePicture"
-                + ": cameraId=" + cameraId
-        );
+                + ": cameraId=" + cameraId);
 
         final var cameraResources = camerasResources.get(cameraId);
         if (cameraResources == null) {
@@ -1010,10 +990,8 @@ import io.flutter.view.TextureRegistry;
                         this,
                         cameraId,
                         outputFile,
-                        resultHandler
-                ),
-                UVCCamera.PIXEL_FORMAT_NV21
-        );
+                        resultHandler),
+                UVCCamera.PIXEL_FORMAT_NV21);
     }
 
     /**
@@ -1028,25 +1006,25 @@ import io.flutter.view.TextureRegistry;
             final int cameraId,
             final File outputFile,
             final ByteBuffer frame,
-            final UvcCameraTakePictureResultHandler resultHandler
-    ) {
+            final UvcCameraTakePictureResultHandler resultHandler) {
         Log.v(TAG, "handleTakenPicture"
                 + ": cameraId=" + cameraId
                 + ", outputFile=" + outputFile
                 + ", frame=" + frame
-                + ", resultHandler=" + resultHandler
-        );
+                + ", resultHandler=" + resultHandler);
 
         final var cameraResources = camerasResources.get(cameraId);
         if (cameraResources == null) {
             throw new IllegalArgumentException("Camera resources not found: " + cameraId);
         }
 
-        // Create copy of the frame data as the frame buffer is owned by the native side (libuvc)
+        // Create copy of the frame data as the frame buffer is owned by the native side
+        // (libuvc)
         final var frameData = new byte[frame.remaining()];
         frame.get(frameData);
 
-        // NOTE: The frame callback should've been detached here yet that will cause a deadlock
+        // NOTE: The frame callback should've been detached here yet that will cause a
+        // deadlock
 
         // Save the taken picture to the file using the worker looper
         mainLooperHandler.post(() -> {
@@ -1074,8 +1052,7 @@ import io.flutter.view.TextureRegistry;
         Log.v(TAG, "saveTakenPictureToFile"
                 + ": cameraId=" + cameraId
                 + ", outputFile=" + outputFile
-                + ", frameData=[... " + frameData.length + " byte(s) ...]"
-        );
+                + ", frameData=[... " + frameData.length + " byte(s) ...]");
 
         final var cameraResources = camerasResources.get(cameraId);
         if (cameraResources == null) {
@@ -1088,8 +1065,7 @@ import io.flutter.view.TextureRegistry;
                 ImageFormat.NV21,
                 previewSize.width,
                 previewSize.height,
-                null
-        );
+                null);
 
         final FileOutputStream outputFileStream;
         try {
@@ -1102,8 +1078,7 @@ import io.flutter.view.TextureRegistry;
             yuvImage.compressToJpeg(
                     new Rect(0, 0, previewSize.width, previewSize.height),
                     100,
-                    outputFileStream
-            );
+                    outputFileStream);
         } catch (Exception e) {
             throw new IllegalStateException("Failed to write picture file", e);
         } finally {
@@ -1127,8 +1102,7 @@ import io.flutter.view.TextureRegistry;
         Log.v(TAG, "startVideoRecording"
                 + ": cameraId=" + cameraId
                 + ", frameWidth=" + frameWidth
-                + ", frameHeight=" + frameHeight
-        );
+                + ", frameHeight=" + frameHeight);
 
         final var cameraResources = camerasResources.get(cameraId);
         if (cameraResources == null) {
@@ -1214,125 +1188,4 @@ import io.flutter.view.TextureRegistry;
 
         return null;
     }
-
-    public void initializeAgora(String appId, String token, String channel, int uid) {
-
-        final var applicationContext = this.applicationContext.get();
-        if (applicationContext == null) {
-            throw new IllegalStateException("applicationContext reference has expired");
-        }
-
-        try {
-
-            agoraEngine = RtcEngine.create(applicationContext, appId, new IRtcEngineEventHandler() {
-
-                @Override
-                public void onConnectionStateChanged(int state, int reason) {
-                    super.onConnectionStateChanged(state, reason);
-//                    Constants.CONNECTION_STATE_CONNECTED;
-                    Log.e("MyAppAgora", "Agora onConnectionStateChanged: " + state + " r:" + reason);
-
-                }
-
-                @Override
-                public void onUserJoined(int uid, int elapsed) {
-                    super.onUserJoined(uid, elapsed);
-                    Log.e("MyAppAgora", "Agora onUserJoined: " + uid);
-                }
-
-                @Override
-                public void onJoinChannelSuccess(String channel, int uid, int elapsed) {
-                    super.onJoinChannelSuccess(channel, uid, elapsed);
-                    Log.e("MyAppAgora", "Agora onJoinChannelSuccess: " + channel);
-                }
-
-                @Override
-                public void onError(int err) {
-                    Log.e("MyAppAgora", "Agora err: " + err);
-                    super.onError(err);
-                }
-
-
-            });
-            agoraEngine.setExternalVideoSource(true, false, Constants.ExternalVideoSourceType.VIDEO_FRAME);
-                        agoraEngine.enableVideo();
-
-            joinChannel(token, channel, uid);
-            canPushFrame = true;
-        } catch (Exception e) {
-            Log.e("MyAppAgora", "Agora initialization failed: " + e.getMessage());
-        }
-    }
-
-    private void joinChannel(String token, String channelName, int uid) {
-        // Create an instance of ChannelMediaOptions and configure it
-        ChannelMediaOptions options = new ChannelMediaOptions();
-        // Set the user role to BROADCASTER or AUDIENCE according to the use-case
-        options.clientRoleType = Constants.CLIENT_ROLE_BROADCASTER;
-        // In the live broadcast use-case, set the channelProfile to BROADCASTING (live broadcast use-case)
-        options.channelProfile = Constants.CHANNEL_PROFILE_LIVE_BROADCASTING;
-        // Set the latency level for audience
-        options.audienceLatencyLevel = Constants.AUDIENCE_LATENCY_LEVEL_ULTRA_LOW_LATENCY;
-        // Publish local media
-        options.publishCameraTrack = true;
-        options.publishMicrophoneTrack = true;
-        agoraEngine.joinChannel("", channelName, uid, options);
-    }
-
-   /* private void setupRemoteVideo(int uid) {
-        FrameLayout container = findViewById(R.id.remote_video_view_container);
-        SurfaceView surfaceView = new SurfaceView(getBaseContext());
-        surfaceView.setZOrderMediaOverlay(true);
-        container.addView(surfaceView);
-        agoraEngine.setupRemoteVideo(new VideoCanvas(surfaceView, VideoCanvas.RENDER_MODE_FIT, uid));
-    }*/
-
-
-    private byte[] convertYUV420SPToI420(byte[] yuv420sp, int width, int height) {
-        int frameSize = width * height;
-        byte[] i420 = new byte[frameSize * 3 / 2];
-
-        // Copy Y plane
-        System.arraycopy(yuv420sp, 0, i420, 0, frameSize);
-
-        // Convert UV plane (YUV420SP stores UV, I420 needs U & V separate)
-        int uvIndex = frameSize;
-        for (int i = frameSize; i < yuv420sp.length; i += 2) {
-            i420[uvIndex++] = yuv420sp[i];     // U
-        }
-        for (int i = frameSize + 1; i < yuv420sp.length; i += 2) {
-            i420[uvIndex++] = yuv420sp[i];     // V
-        }
-        return i420;
-    }
-
-    private void pushFrameToAgora(byte[] frameData, int width, int height) {
-        AgoraVideoFrame frame = new AgoraVideoFrame();
-        frame.format = AgoraVideoFrame.FORMAT_I420;
-//        frame.format = AgoraVideoFrame.FORMAT_NV21;
-//        frame.format = AgoraVideoFrame.FORMAT_I420; // Instead of NV21
-
-        frame.stride = width;
-        frame.height = height;
-        frame.buf = frameData;
-        frame.rotation = 0;
-        frame.timeStamp = System.currentTimeMillis();
-
-        synchronized (this) {
-            agoraEngine.pushExternalVideoFrameById(frame, 0);
-        }
-    }
-
-    private void enableVideo() {
-        agoraEngine.enableVideo();
-    }
-
-    void cleanupAgoraEngine() {
-        canPushFrame = false;
-        if (agoraEngine != null) {
-            agoraEngine.leaveChannel();
-            agoraEngine = null;
-        }
-    }
-
 }

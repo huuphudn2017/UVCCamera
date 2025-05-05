@@ -13,8 +13,12 @@ import 'uvccamera_status_event.dart';
 class UvcCameraPlatform extends UvcCameraPlatformInterface {
   final _nativeMethodChannel = const MethodChannel('uvccamera/native');
 
-  final EventChannel _deviceEventChannel = EventChannel('uvccamera/device_events');
+  final EventChannel _deviceEventChannel =
+      EventChannel('uvccamera/device_events');
+  final EventChannel _cameraEventChannel =
+      EventChannel('uvccamera/camera_events');
   Stream<UvcCameraDeviceEvent>? _deviceEventStream;
+  Stream<dynamic>? _cameraEventStream;
 
   final Map<int, EventChannel> _errorEventChannels = {};
   final Map<int, Stream<UvcCameraErrorEvent>> _errorEventStreams = {};
@@ -55,7 +59,8 @@ class UvcCameraPlatform extends UvcCameraPlatformInterface {
 
   @override
   Future<bool> requestDevicePermission(UvcCameraDevice device) async {
-    final result = await _nativeMethodChannel.invokeMethod<bool>('requestDevicePermission', {
+    final result = await _nativeMethodChannel
+        .invokeMethod<bool>('requestDevicePermission', {
       'deviceName': device.name,
     });
     if (result == null) {
@@ -68,7 +73,8 @@ class UvcCameraPlatform extends UvcCameraPlatformInterface {
   }
 
   @override
-  Future<int> openCamera(UvcCameraDevice device, UvcCameraResolutionPreset resolutionPreset) async {
+  Future<int> openCamera(UvcCameraDevice device,
+      UvcCameraResolutionPreset resolutionPreset) async {
     final result = await _nativeMethodChannel.invokeMethod<int>('openCamera', {
       'deviceName': device.name,
       'resolutionPreset': resolutionPreset.name,
@@ -97,7 +103,8 @@ class UvcCameraPlatform extends UvcCameraPlatformInterface {
 
   @override
   Future<int> getCameraTextureId(int cameraId) async {
-    final result = await _nativeMethodChannel.invokeMethod<int>('getCameraTextureId', {
+    final result =
+        await _nativeMethodChannel.invokeMethod<int>('getCameraTextureId', {
       'cameraId': cameraId,
     });
     if (result == null) {
@@ -110,13 +117,17 @@ class UvcCameraPlatform extends UvcCameraPlatformInterface {
   }
 
   @override
-  Future<Stream<UvcCameraErrorEvent>> attachToCameraErrorCallback(int cameraId) async {
-    final errorEventChannel = EventChannel('uvccamera/camera@$cameraId/error_events');
-    final errorEventStream = errorEventChannel.receiveBroadcastStream().map((event) {
+  Future<Stream<UvcCameraErrorEvent>> attachToCameraErrorCallback(
+      int cameraId) async {
+    final errorEventChannel =
+        EventChannel('uvccamera/camera@$cameraId/error_events');
+    final errorEventStream =
+        errorEventChannel.receiveBroadcastStream().map((event) {
       return UvcCameraErrorEvent.fromMap(event);
     });
 
-    await _nativeMethodChannel.invokeMethod<void>('attachToCameraErrorCallback', {
+    await _nativeMethodChannel
+        .invokeMethod<void>('attachToCameraErrorCallback', {
       'cameraId': cameraId,
     });
 
@@ -128,7 +139,8 @@ class UvcCameraPlatform extends UvcCameraPlatformInterface {
 
   @override
   Future<void> detachFromCameraErrorCallback(int cameraId) async {
-    await _nativeMethodChannel.invokeMethod<void>('detachFromCameraErrorCallback', {
+    await _nativeMethodChannel
+        .invokeMethod<void>('detachFromCameraErrorCallback', {
       'cameraId': cameraId,
     });
 
@@ -137,13 +149,17 @@ class UvcCameraPlatform extends UvcCameraPlatformInterface {
   }
 
   @override
-  Future<Stream<UvcCameraStatusEvent>> attachToCameraStatusCallback(int cameraId) async {
-    final statusEventChannel = EventChannel('uvccamera/camera@$cameraId/status_events');
-    final statusEventStream = statusEventChannel.receiveBroadcastStream().map((event) {
+  Future<Stream<UvcCameraStatusEvent>> attachToCameraStatusCallback(
+      int cameraId) async {
+    final statusEventChannel =
+        EventChannel('uvccamera/camera@$cameraId/status_events');
+    final statusEventStream =
+        statusEventChannel.receiveBroadcastStream().map((event) {
       return UvcCameraStatusEvent.fromMap(event);
     });
 
-    await _nativeMethodChannel.invokeMethod<void>('attachToCameraStatusCallback', {
+    await _nativeMethodChannel
+        .invokeMethod<void>('attachToCameraStatusCallback', {
       'cameraId': cameraId,
     });
 
@@ -155,7 +171,8 @@ class UvcCameraPlatform extends UvcCameraPlatformInterface {
 
   @override
   Future<void> detachFromCameraStatusCallback(int cameraId) async {
-    await _nativeMethodChannel.invokeMethod<void>('detachFromCameraStatusCallback', {
+    await _nativeMethodChannel
+        .invokeMethod<void>('detachFromCameraStatusCallback', {
       'cameraId': cameraId,
     });
 
@@ -164,13 +181,17 @@ class UvcCameraPlatform extends UvcCameraPlatformInterface {
   }
 
   @override
-  Future<Stream<UvcCameraButtonEvent>> attachToCameraButtonCallback(int cameraId) async {
-    final buttonEventChannel = EventChannel('uvccamera/camera@$cameraId/button_events');
-    final buttonEventStream = buttonEventChannel.receiveBroadcastStream().map((event) {
+  Future<Stream<UvcCameraButtonEvent>> attachToCameraButtonCallback(
+      int cameraId) async {
+    final buttonEventChannel =
+        EventChannel('uvccamera/camera@$cameraId/button_events');
+    final buttonEventStream =
+        buttonEventChannel.receiveBroadcastStream().map((event) {
       return UvcCameraButtonEvent.fromMap(event);
     });
 
-    await _nativeMethodChannel.invokeMethod<void>('attachToCameraButtonCallback', {
+    await _nativeMethodChannel
+        .invokeMethod<void>('attachToCameraButtonCallback', {
       'cameraId': cameraId,
     });
 
@@ -182,7 +203,8 @@ class UvcCameraPlatform extends UvcCameraPlatformInterface {
 
   @override
   Future<void> detachFromCameraButtonCallback(int cameraId) async {
-    await _nativeMethodChannel.invokeMethod<void>('detachFromCameraButtonCallback', {
+    await _nativeMethodChannel
+        .invokeMethod<void>('detachFromCameraButtonCallback', {
       'cameraId': cameraId,
     });
 
@@ -192,7 +214,8 @@ class UvcCameraPlatform extends UvcCameraPlatformInterface {
 
   @override
   Future<List<UvcCameraMode>> getSupportedModes(int cameraId) async {
-    final result = await _nativeMethodChannel.invokeMethod<List>('getSupportedModes', {
+    final result =
+        await _nativeMethodChannel.invokeMethod<List>('getSupportedModes', {
       'cameraId': cameraId,
     });
     if (result == null) {
@@ -208,7 +231,8 @@ class UvcCameraPlatform extends UvcCameraPlatformInterface {
 
   @override
   Future<UvcCameraMode> getPreviewMode(int cameraId) async {
-    final result = await _nativeMethodChannel.invokeMethod<Map>('getPreviewMode', {
+    final result =
+        await _nativeMethodChannel.invokeMethod<Map>('getPreviewMode', {
       'cameraId': cameraId,
     });
     if (result == null) {
@@ -230,7 +254,8 @@ class UvcCameraPlatform extends UvcCameraPlatformInterface {
 
   @override
   Future<XFile> takePicture(int cameraId) async {
-    final result = await _nativeMethodChannel.invokeMethod<String>('takePicture', {
+    final result =
+        await _nativeMethodChannel.invokeMethod<String>('takePicture', {
       'cameraId': cameraId,
     });
 
@@ -245,25 +270,10 @@ class UvcCameraPlatform extends UvcCameraPlatformInterface {
   }
 
   @override
-  Future<void> initializeAgora(String appId, String token, String channel, int uid) async {
-    await _nativeMethodChannel.invokeMethod<String>('initializeAgora', {
-      'appId': appId,
-      'token': token,
-      'channel': channel,
-      'uid': uid,
-    });
-    return;
-  }
-
-  @override
-  Future<void> stopStream() async {
-    await _nativeMethodChannel.invokeMethod<String>('stopStream');
-    return;
-  }
-
-  @override
-  Future<XFile> startVideoRecording(int cameraId, UvcCameraMode videoRecordingMode) async {
-    final result = await _nativeMethodChannel.invokeMethod<String>('startVideoRecording', {
+  Future<XFile> startVideoRecording(
+      int cameraId, UvcCameraMode videoRecordingMode) async {
+    final result =
+        await _nativeMethodChannel.invokeMethod<String>('startVideoRecording', {
       'cameraId': cameraId,
       'videoRecordingMode': videoRecordingMode.toMap(),
     });
@@ -287,8 +297,17 @@ class UvcCameraPlatform extends UvcCameraPlatformInterface {
 
   @override
   Stream<UvcCameraDeviceEvent> get deviceEventStream {
-    return _deviceEventStream ??= _deviceEventChannel.receiveBroadcastStream().map((event) {
+    return _deviceEventStream ??=
+        _deviceEventChannel.receiveBroadcastStream().map((event) {
       return UvcCameraDeviceEvent.fromMap(event);
+    });
+  }
+
+  @override
+  Stream<dynamic> get cameraEventStream {
+    return _cameraEventStream ??=
+        _cameraEventChannel.receiveBroadcastStream().map((event) {
+      return event;
     });
   }
 }

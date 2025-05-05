@@ -26,7 +26,6 @@ class _UvcCameraDevicesScreenState extends State<UvcCameraDevicesScreen> {
       appIdController.text = "1495a5c75a024f05afe291aa0b5ee5f8";
     }
 
-
     UvcCamera.isSupported().then((value) {
       setState(() {
         _isSupported = value;
@@ -86,7 +85,8 @@ class _UvcCameraDevicesScreenState extends State<UvcCameraDevicesScreen> {
               return ListTile(
                 leading: const Icon(Icons.videocam),
                 title: Text(device.name),
-                subtitle: Text('Vendor ID: ${device.vendorId}, Product ID: ${device.productId}'),
+                subtitle: Text(
+                    'Vendor ID: ${device.vendorId}, Product ID: ${device.productId}'),
                 onTap: () {
                   onDeviceSelected(device);
                 },
@@ -154,7 +154,8 @@ class _UvcCameraDevicesScreenState extends State<UvcCameraDevicesScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => UvcCameraDeviceScreen(device: device, appId: appIdController.text),
+        builder: (context) =>
+            UvcCameraDeviceScreen(device: device, appId: appIdController.text),
       ),
     );
   }
