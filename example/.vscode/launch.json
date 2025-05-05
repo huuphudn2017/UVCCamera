@@ -1,0 +1,10 @@
+{
+  "version": "1.0.0",
+  "configurations": [
+    {
+      "name": "Flutter Dev",
+      "request": "launch",
+      "type": "dart",
+    },
+  ]
+}
